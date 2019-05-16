@@ -1,10 +1,23 @@
+# -*- coding: utf-8 -*-
+
+'''
+Model.py
+
+@author: Alisa Demina
+
+The model class for the BarrowModel
+
+'''
+
 import random
 import numpy as np
 import pandas as pd
 from Agents import Nomad, Royal 
 
 class Model:
-    '''initialize agent based model'''
+    '''
+    Initialize the model`s attributes
+    '''
     def __init__(self, num_of_nomads, num_of_royals, num_of_iterations):
         self.agents = []
         self.dead_agents = []
@@ -15,10 +28,14 @@ class Model:
         
 
     def step(self):
+        '''
+        Initialize the sequence of actions on the each step of iteration.
+
+        '''
 #       shuffle the agents list
         random.shuffle(self.agents)
-#       every agent ages 1 year each step, if adult with some probability reproduces
-#       and with some probability dies (probability to die increases if agent is old).
+#       every agent ages 1 year each step, with some probability reproduces
+#       and dies (probability to die increases if agent is old).
         for i, _ in enumerate(self.agents, 0):
             if self.agents[i].alive == True:
                 self.agents[i].set_energy(30)
@@ -30,12 +47,11 @@ class Model:
                 elif random.random() > 0.82:
                     self.agents[i].die()
         if len(self.agents) >= 100 and sum(isinstance(item, Royal) for item in self.agents) == 0:
-            print("royal appeared")
             self.add_royal(1)
         if len(self.agents) == 0:
             print("new group")
             self.setup()
-#       check if someone died and doesn't have a burial, build the burial and add it to the list.
+#       check if someone has died and didn't have a burial, build the burial and add it to the list.
         dead_in_step = {"royal": [], "chief": [], "common": [], "common_low": [], "marginal": []}
         community = [x for x in self.agents if x.type == "Common"]
         dead_agents = [x for x in self.agents if x.type == "Dead"]
@@ -81,7 +97,6 @@ class Model:
                 for i in workers:
                     i.energy -= individual_effort
                     if i.energy < 0:
-                        print(i)
                         resettle.append(i)
                 for key, value in dead_in_step.items():
                     if key == dead.status:
@@ -93,6 +108,9 @@ class Model:
         self.agents[:] = [x for x in self.agents if x.type != "Dead" or x.type !="Royal Dead"]
         
     def get_num_of_workers(self, status):
+        '''
+        Sets the amount of agents, which will take part in the burial construction. The number depends on the social status of the deceased.
+        '''
         community = [x for x in self.agents if x.type == "Common"]
         if status == "marginal":
             num_of_workers = 2
@@ -105,7 +123,9 @@ class Model:
         return num_of_workers
     
     def set_agents(self):
-        '''generate agents'''
+        '''
+        generate agents
+        '''
         for i in range(0, self.num_of_nomads):
             self.agents.append(Nomad(random.randint(14, 50), self.agents))
         for i in range(0, len(self.agents)):
@@ -117,30 +137,42 @@ class Model:
             
             
     def add_royal(self, num):
+        '''
+        manually adds royal agents to the model.
+        '''
         for i in range(0, num):
             self.agents.append(Royal(random.randint(14, 50), self.agents))
         
     def reset(self):
+        '''
+        Deletes all the agents from the model list.
+        '''
         self.agents = []
         
     def setup(self):
+        '''
+        Generates initial set of agents.
+        '''
         self.reset()
         self.set_agents()
 
         
     def get_data(self):
-        '''plots the model. x = step count, y = number of burials'''
+        '''
+        Records the generated data. Currently, it consists only from the mean effort on every type of the burial constuction each step.
+        '''
         means = []
-        sums = []
         for i in self.burials:
             j = {k:round(np.mean(v)) for k,v in i.items()}
             means.append(j)
         df = pd.DataFrame(means)
         df = df.fillna(0)
-        df.to_csv("/home/alisk/means.csv", sep='\t', encoding='utf-8')
-
+        return df
 
     def iter_step(self, iterations):
+        '''
+        Sets the number of the iterations of the model
+        '''
         for i in range(0, iterations):
             for num in range(0, self.num_of_iterations):
                 self.step()
@@ -148,6 +180,8 @@ class Model:
             self.setup()
 
     def get_number_of_burials(self, burials):
+        '''
+        '''
         all_bur = {"royal": 0, "chief": 0, "common": 0, "common_low": 0, "marginal": 0}
         for i in test.burials:
             for key, value in i.items():
